@@ -3,6 +3,7 @@ A Phaser v3 tooltip plugin
 
 Add tooltip to a game object. This plugin can handle simple text, sprite, image or a complex game object.
 
+![sample](https://github.com/netgfx/Phaser-tooltip/blob/main/sample.gif)
 
 # Usage
 ```
