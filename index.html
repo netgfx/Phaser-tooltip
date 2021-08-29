@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <script src="//cdn.jsdelivr.net/npm/phaser@3.55.2/dist/phaser.min.js"></script>
+    <script src="./PhaserTooltip_simple.js"></script>
+</head>
+
+<body>
+
+    <script>
+        var config = {
+            type: Phaser.AUTO,
+            width: 800,
+            height: 600,
+            physics: {
+                default: 'arcade',
+                arcade: {
+                    gravity: {
+                        y: 100
+                    }
+                }
+            },
+            scene: {
+                preload: preload,
+                create: create,
+                update: update
+            }
+        };
+
+        var game = new Phaser.Game(config);
+
+        function preload() {
+            this.load.scenePlugin('PhaserTooltip', PhaserTooltip, 'PhaserTooltip', 'tooltip');
+            //this.load.setBaseURL('http://labs.phaser.io');
+
+            this.load.image('tooltipBG', './assets/tooltipBG.png');
+            this.load.image('monster', './assets/monster.png');
+            this.load.image('loadingBG', './assets/loadBg.png');
+            this.load.image("loadingBG_Black", './assets/loadBG_black.png');
+            this.load.image("food", "./assets/food.png");
+            this.load.image('sky', 'http://labs.phaser.io/assets/skies/space3.png');
+            //this.load.image('logo', 'assets/sprites/phaser3-logo.png');
+            this.load.image('red', 'http://labs.phaser.io/assets/particles/red.png');
+
+
+        }
+
+
+
+        function create() {
+            this.add.image(400, 300, 'sky');
+            this.hasLogged = false;
+            var particles = this.add.particles('red');
+
+            var emitter = particles.createEmitter({
+                speed: 100,
+                scale: {
+                    start: 1,
+                    end: 0
+                },
+                blendMode: 'ADD'
+            });
+
+            var monster = this.physics.add.image(400, 100, 'monster');
+
+            monster.setVelocity(0, 0);
+            monster.setBounce(1, 1);
+            monster.setCollideWorldBounds(true);
+
+            emitter.startFollow(monster);
+
+            console.log(this.scene.tooltip, this.tooltip);
+
+            var advancedTooltip = createTooltipContent(this);
+
+            addTooltip(monster.x, monster.y, monster, advancedTooltip, this);
+
+            function createTooltipContent(scene) {
+                var container = scene.add.container(0, 0);
+                var bg = scene.add.sprite(0, 0, "tooltipBG");
+                var food = scene.add.sprite(bg.x - bg.width * 0.5 + 25, 0, "food");
+                food.setScale(0.42);
+                var loadingBG = scene.add.sprite(0, 0, "loadingBG");
+                loadingBG.x = food.x + loadingBG.displayWidth * 0.5 + 20;
+                var loadingBG_Black = scene.add.sprite(loadingBG.x, loadingBG.y, "loadingBG_Black");
+                var loadingBar = addloadingBar(loadingBarX, loadingBarY, scene);
+
+                container.add(bg);
+                container.add(food);
+                container.add(loadingBG_Black);
+                container.add(loadingBar);
+
+                container.add(loadingBG);
+
+                container.x = 100;
+                container.y = 100;
+                //
+                var loadingBarX = loadingBG.x - loadingBG.displayWidth * 0.5;
+                var loadingBarY = loadingBG.y - loadingBG.displayHeight * 0.5;
+
+                scene.barPerc = 0;
+                window.setTimeout(function() {
+                    updateBar(scene, loadingBarX, loadingBarY);
+                }, 2000);
+
+                return container;
+            }
+
+            function addloadingBar(x, y, scene) {
+                let color = 0x7fef2f; // 0x65dd40
+
+                //
+                scene.progress = scene.add.graphics();
+                scene.progress.clear();
+                scene.progress.fillStyle(color, 1);
+                scene.progress.fillRect(
+                    x + 2,
+                    y + 2,
+                    0,
+                    25
+                );
+
+                return scene.progress;
+            }
+
+            function updateBar(scene, x, y) {
+                scene.barPerc = scene.barPerc + 0.1;
+                updateloadingBar(scene.barPerc, scene, x, y);
+
+                if (scene.barPerc < 1) {
+                    window.setTimeout(function() {
+                        updateBar(scene, x, y);
+                    }, 2000);
+                }
+            }
+
+            function updateloadingBar(perc, scene, x, y) {
+                console.log(perc);
+                let color = 0x7fef2f;
+                var _perc = perc <= 1 ? perc : 1;
+                scene.progress.clear();
+                scene.progress.fillStyle(color, 1);
+                scene.progress.fillRect(
+                    x + 2,
+                    y + 2,
+                    129 * _perc,
+                    25
+                );
+            }
+
+
+            function addTooltip(x, y, item, content, scene) {
+
+                var tooltipID = scene.tooltipID = Math.random() * 10000;
+                scene._tooltip = scene.tooltip.createTooltip({
+                    x: x,
+                    y: item.getBounds().y - 150,
+                    hasBackground: false,
+                    content: content,
+                    // text: {
+                    //     text: "Hello Tooltip!"
+                    // },
+                    background: {
+                        width: 100,
+                        height: 50
+                    },
+                    id: tooltipID,
+                    target: item
+                });
+
+                scene.tooltip.hideTooltip(tooltipID);
+                console.log(scene._tooltip);
+                ////////////////////////////////////////////////////
+
+                item.setInteractive();
+
+                item.on(
+                    'pointerover',
+                    function(pointer, item) {
+                        scene.tooltip.showTooltip(tooltipID, true);
+                    },
+                    scene
+                );
+
+                item.on(
+                    'pointerout',
+                    function(pointer, item) {
+                        scene.tooltip.hideTooltip(tooltipID, true);
+                    },
+                    scene
+                );
+            }
+        }
+
+        function update() {
+            if (this._tooltip) {
+                var pad = this.tooltip.getPadding(this.tooltipID);
+                this._tooltip.x = this.tooltip.getTarget(this.tooltipID).getBounds().centerX - (this._tooltip.getBounds().width + pad.paddingLeft + pad.paddingRight) * 0.5;
+                this._tooltip.y = this.tooltip.getTarget(this.tooltipID).getBounds().y - 150;
+
+                // if (this.hasLogged == false) {
+                //     console.log("UPDATE: ", pad, (this._tooltip.getBounds().width + pad.paddingLeft + pad.paddingRight), (pad.paddingLeft + pad.paddingRight), this._tooltip.getBounds(), this.tooltip.getTarget(this.tooltipID).getBounds())
+                //     this.hasLogged = true;
+                // }
+            }
+        }
+    </script>
+</body>
+
+</html>
