@@ -1,5 +1,6 @@
 # Phaser-tooltip
-A Phaser v3 tooltip plugin
+A Phaser v3 tooltip plugin ([Looking for the v2 plugin?](https://github.com/netgfx/Phasetips))
+
 
 Add tooltip to a game object. This plugin can handle simple text, sprite, image or a complex game object.
 
