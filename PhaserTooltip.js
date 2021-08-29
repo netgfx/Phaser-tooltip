@@ -72,6 +72,7 @@ export class PhaserTooltip {
         scene.sys.events.once('boot', this.boot, this);
 
         this.tooltipCollection = {};
+        this.target = null;
     }
 
     /**
@@ -135,13 +136,13 @@ export class PhaserTooltip {
     hideTooltip(id, animate) {
 
         if (animate) {
-            let isTweening = this.scene.tweens.isTweening(this.tooltipCollection[id]);
+            let isTweening = this.scene.tweens.isTweening(this.tooltipCollection[id].container);
             if (isTweening) {
-                this.scene.tweens.killTweensOf(this.tooltipCollection[id]);
+                this.scene.tweens.killTweensOf(this.tooltipCollection[id].container);
             }
 
             this.tween = this.scene.tweens.add({
-                targets: this.tooltipCollection[id],
+                targets: this.tooltipCollection[id].container,
                 alpha: 0,
                 ease: 'Power1',
                 duration: 250,
@@ -152,24 +153,24 @@ export class PhaserTooltip {
             });
 
         } else {
-            this.tooltipCollection[id].visible = false;
+            this.tooltipCollection[id].container.visible = false;
         }
     }
 
     showTooltip(id, animate) {
 
         if (animate) {
-            this.tooltipCollection[id].alpha = 0;
-            this.tooltipCollection[id].visible = true;
-            this.scene.children.bringToTop(this.tooltipCollection[id]);
+            this.tooltipCollection[id].container.alpha = 0;
+            this.tooltipCollection[id].container.visible = true;
+            this.scene.children.bringToTop(this.tooltipCollection[id].container);
 
-            let isTweening = this.scene.tweens.isTweening(this.tooltipCollection[id]);
+            let isTweening = this.scene.tweens.isTweening(this.tooltipCollection[id].container);
             if (isTweening) {
-                this.scene.tweens.killTweensOf(this.tooltipCollection[id]);
+                this.scene.tweens.killTweensOf(this.tooltipCollection[id].container);
             }
 
             this.tween = this.scene.tweens.add({
-                targets: this.tooltipCollection[id],
+                targets: this.tooltipCollection[id].container,
                 alpha: 1,
                 ease: 'Power1',
                 duration: 500,
@@ -179,8 +180,8 @@ export class PhaserTooltip {
                 },
             });
         } else {
-            this.tooltipCollection[id].visible = true;
-            this.scene.children.bringToTop(this.tooltipCollection[id]);
+            this.tooltipCollection[id].container.visible = true;
+            this.scene.children.bringToTop(this.tooltipCollection[id].container);
         }
     }
 
@@ -195,8 +196,12 @@ export class PhaserTooltip {
         let background;
 
         let container = this.scene.add.container(options.x, options.y);
-        let content = this.createLabel(container, options.x, options.y, options);
-
+        let content;
+        if (options.content === undefined && options.text.text !== undefined) {
+            content = this.createLabel(container, options.x, options.y, options);
+        } else {
+            content = options.content;
+        }
 
         if (options.hasBackground) {
             background = this.createBackground(container, content, options.x, options.y, options.background.width, options.background.height, options);
@@ -205,17 +210,42 @@ export class PhaserTooltip {
             content.y = background.rect.centerY - content.displayHeight * 0.5;
         }
 
-
         container.add(content);
 
         container.x = options.x;
         container.y = options.y;
         console.log(options, container, background);
 
-        this.tooltipCollection[options.id] = container;
-
+        this.tooltipCollection[options.id] = { container: container, target: options.target, options: options };
+        this.target = options.target;
         return container;
 
+    }
+
+    /**
+     *
+     *
+     * @param {*} id
+     * @returns
+     * @memberof PhaserTooltip
+     */
+    getTarget(id) {
+        return this.tooltipCollection[id].target;
+    }
+
+    /**
+     *
+     *
+     * @param {*} id
+     * @returns
+     * @memberof PhaserTooltip
+     */
+    getPadding(id) {
+        var paddingTop = this.tooltipCollection[id].options.paddingTop || 12;
+        var paddingBottom = this.tooltipCollection[id].options.paddingBottom || 12;
+        var paddingLeft = this.tooltipCollection[id].options.paddingLeft || 16;
+        var paddingRight = this.tooltipCollection[id].options.paddingRight || 16;
+        return { paddingLeft: paddingLeft, paddingRight: paddingRight, paddingTop: paddingTop, paddingBottom: paddingBottom };
     }
 
     /**
@@ -269,6 +299,10 @@ export class PhaserTooltip {
      */
     createBackground(container, content, x, y, width, height, options) {
 
+        var paddingTop = options.paddingTop || 12;
+        var paddingBottom = options.paddingBottom || 12;
+        var paddingLeft = options.paddingLeft || 16;
+        var paddingRight = options.paddingRight || 16;
         let lineStyle = options.background.lineStyle || {
             width: 2,
             color: 0x000000,
@@ -284,8 +318,8 @@ export class PhaserTooltip {
             fillStyle: fillStyle
         });
 
-        let _width = width >= (content.displayWidth + 32) ? width : content.displayWidth + 32;
-        let _height = height >= (content.displayHeight + 24) ? height : content.displayHeight + 24;
+        let _width = width >= (content.displayWidth + paddingLeft + paddingRight) ? width : content.displayWidth + paddingLeft + paddingRight;
+        let _height = height >= (content.displayHeight + paddingTop + paddingBottom) ? height : content.displayHeight + paddingTop + paddingBottom;
 
         var rect = new Phaser.Geom.Rectangle(0, 0, _width, _height);
         rect.width = _width;
