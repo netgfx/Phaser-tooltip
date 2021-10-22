@@ -1,3 +1,4 @@
+
 export class PhaserTooltip {
 
     constructor(scene, pluginManager) {
@@ -106,7 +107,8 @@ export class PhaserTooltip {
      * @param {integer} time - The current game timestep.
      */
     update(time) {
-
+        // if(this.con)
+        // this.con.list[0]
     }
 
     /**
@@ -130,7 +132,6 @@ export class PhaserTooltip {
     }
 
     test() {
-        console.log("test!");
     }
 
     hideTooltip(id, animate) {
@@ -195,26 +196,40 @@ export class PhaserTooltip {
 
         let background;
 
-        let container = this.scene.add.container(options.x, options.y);
+        let container = this.scene.add.container(0, 0);
+
         let content;
-        if (options.content === undefined && options.text.text !== undefined) {
-            content = this.createLabel(container, options.x, options.y, options);
-        } else {
-            content = options.content;
+        if (options.content === undefined && options.text.text !== undefined && options.html === undefined) {
+            content = this.createLabel(container, 0, 0, options);
+        } else if (options.html !== undefined) {
+            content = options.html;
         }
+        else {
+            content = options.content;
+            content.x = content.displayWidth / 2;
+        }
+
+        container.width = content.displayWidth;
+        container.height = content.displayHeight;
 
         if (options.hasBackground) {
             background = this.createBackground(container, content, options.x, options.y, options.background.width, options.background.height, options);
+            if (options.content === undefined && options.html === undefined) {
+                content.x = background.rect.centerX - content.displayWidth * 0.5;
+                content.y = background.rect.centerY - content.displayHeight * 0.5;
+            } else {
+                content.x = background.rect.centerX;
+                content.y = background.rect.centerY;
+            }
 
-            content.x = background.rect.centerX - content.displayWidth * 0.5;
-            content.y = background.rect.centerY - content.displayHeight * 0.5;
+            container.width = background.rect.width;
+            container.height = background.rect.height;
+
         }
 
         container.add(content);
-
         container.x = options.x;
         container.y = options.y;
-        console.log(options, container, background);
 
         this.tooltipCollection[options.id] = { container: container, target: options.target, options: options };
         this.target = options.target;
@@ -231,6 +246,10 @@ export class PhaserTooltip {
      */
     getTarget(id) {
         return this.tooltipCollection[id].target;
+    }
+
+    getHeight(id) {
+        return this.tooltipCollection[id].container.height;
     }
 
     /**
@@ -266,8 +285,6 @@ export class PhaserTooltip {
             align: options.text.align || 'center'
         });
 
-        console.log(options);
-
 
         if (options.hasShadow) {
             let shadowColor = options.text.shadowColor || "#1e1e1e";
@@ -276,10 +293,6 @@ export class PhaserTooltip {
             let shadowFill = options.text.shadowFill || true;
             text.setShadow(0, 0, shadowColor, blur, shadowStroke, shadowFill);
         }
-
-
-
-        //Phaser.Display.Align.In.Center(text, background.rect);
 
 
         return text;
@@ -321,11 +334,10 @@ export class PhaserTooltip {
         let _width = width >= (content.displayWidth + paddingLeft + paddingRight) ? width : content.displayWidth + paddingLeft + paddingRight;
         let _height = height >= (content.displayHeight + paddingTop + paddingBottom) ? height : content.displayHeight + paddingTop + paddingBottom;
 
-        var rect = new Phaser.Geom.Rectangle(0, 0, _width, _height);
+        var rect = new Phaser.Geom.Rectangle(options.html === undefined ? -_width / 2 + container.width / 2 : -_width / 2, 0, _width, _height);
         rect.width = _width;
         rect.height = _height;
         graphics.fillRectShape(rect);
-
         container.add(graphics);
 
         return { rect: rect, graphic: graphics };
@@ -336,4 +348,4 @@ export class PhaserTooltip {
     }
 
 }
-module.exports = PhaserTooltip;
+export default PhaserTooltip
